@@ -1,4 +1,4 @@
-# 🧺 LaundryOS — Mini Laundry Order Management System
+# DCOM — Dry Cleaning Order Management System
 
 > A clean, production-readable full-stack web app built with **Node.js + Express** (backend) and **Vanilla HTML/CSS/JS** (frontend). Designed to be simple, modular, and beginner-friendly — yet deployable in real environments.
 
@@ -6,7 +6,7 @@
 
 ## 📌 Project Overview
 
-LaundryOS lets a laundry shop:
+LaundryOS lets a dry cleaning shop:
 - **Create orders** with customer details and garment items
 - **Track status** through a strict flow: `RECEIVED → PROCESSING → READY → DELIVERED`
 - **View & filter** orders by status, name, or phone
@@ -22,7 +22,7 @@ All data is stored in-memory (no database required to run). A MongoDB upgrade pa
 |---|---|
 | Create Order | Customer name, phone, garments list, auto-calculated bill |
 | Unique Order ID | `ORD-{timestamp}-{random4hex}` format |
-| Auto Bill Calc | Shirt ₹10, Pants ₹15, Saree ₹20 |
+| Auto Bill Calc | Shirt ₹40, Pants ₹60, Saree ₹150 |
 | Status Flow | Forward-only; invalid transitions rejected with clear errors |
 | Filter Orders | By status, name (partial, case-insensitive), phone |
 | Dashboard | Total orders, revenue, per-status counts |
@@ -110,7 +110,7 @@ Content-Type: application/json
       { "type": "Shirt", "quantity": 2 },
       { "type": "Pants", "quantity": 1 }
     ],
-    "totalBill": 35,
+    "totalBill": 140,
     "status": "RECEIVED",
     "createdAt": "2026-04-27T18:00:00.000Z",
     "updatedAt": "2026-04-27T18:00:00.000Z"
@@ -175,7 +175,7 @@ GET /api/dashboard
 ```json
 {
   "totalOrders": 10,
-  "totalRevenue": 350,
+  "totalRevenue": 1000,
   "statusCounts": {
     "RECEIVED": 3,
     "PROCESSING": 2,
@@ -206,7 +206,7 @@ GET /api/orders/:orderId
 - **Google Deepmind Antigravity** (Claude Sonnet 4.6 Thinking) — Primary code generation tool
 
 ### Sample Prompts Used
-- *"Build a Mini Laundry Order Management System with Node.js + Express"*
+- *"Build a Dry Cleaning Management System with Node.js + Express"*
 - *"Create modular backend with in-memory storage, controllers, and routes"*
 - *"Generate a premium dark-mode frontend with live bill calculator and status modal"*
 
