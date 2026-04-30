@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DCOMS</title>
+  <meta name="description"
+    content="Manage laundry orders — create orders, track status, and view live dashboard stats." />
+
+  <!-- Google Fonts: Inter for clean modern UI -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+
+  <!-- ══════════════════════════════════════════════════
+       HEADER — App name + subtitle
+  ══════════════════════════════════════════════════ -->
+  <header class="app-header">
+    <div class="header-inner">
+      <div class="logo"></div>
+      <div>
+        <h1 class="app-title">DCOMS</h1>
+        <p class="app-subtitle">Order Management System</p>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <!-- ══════════════════════════════════════════════════
+         SECTION 1 — Dashboard Stats
+    ══════════════════════════════════════════════════ -->
+    <section class="section" id="dashboard-section">
+      <h2 class="section-title">📊 Dashboard</h2>
+      <div class="stats-grid" id="stats-grid">
+        <!-- Populated by fetchDashboard() in app.js -->
+        <div class="stat-card skeleton"></div>
+        <div class="stat-card skeleton"></div>
+        <div class="stat-card skeleton"></div>
+        <div class="stat-card skeleton"></div>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════
+         SECTION 2 — Create Order Form
+    ══════════════════════════════════════════════════ -->
+    <section class="section" id="create-section">
+      <h2 class="section-title">➕ Create New Order</h2>
+      <form id="create-order-form" class="card form-card" novalidate>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="customerName">Customer Name</label>
+            <input type="text" id="customerName" placeholder="e.g. Rahul Sharma" required />
+          </div>
+          <div class="form-group">
+            <label for="phone">Phone Number</label>
+            <input type="tel" id="phone" placeholder="e.g. 9876543210" required />
+          </div>
+        </div>
+
+        <!-- Garment rows — user can add multiple -->
+        <div class="form-group">
+          <label>Garments</label>
+          <div id="garments-container">
+            <!-- First garment row is added by JS on load -->
+          </div>
+          <button type="button" id="add-garment-btn" class="btn btn-ghost">
+            + Add Another Garment
+          </button>
+        </div>
+
+        <!-- Live bill preview -->
+        <div class="bill-preview" id="bill-preview">
+          <span>Estimated Total:</span>
+          <span class="bill-amount" id="bill-amount">₹0</span>
+        </div>
+
+        <!-- Pricing reference for the user -->
+        <div class="pricing-hint">
+          💡 Pricing — Shirt: ₹40 &nbsp;|&nbsp; Pants: ₹60 &nbsp;|&nbsp; Saree: ₹150
+        </div>
+
+        <div class="payment-actions">
+          <button type="button" class="btn btn-ghost" id="cash-btn">
+            💵 Paid in Cash
+          </button>
+          <button type="button" class="btn btn-primary" id="online-btn">
+            💳 Pay Online
+          </button>
+        </div>
+
+        <!-- Success / error message area -->
+        <div class="form-message" id="form-message"></div>
+      </form>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════
+         SECTION 3 — Orders List with Filters
+    ══════════════════════════════════════════════════ -->
+    <section class="section" id="orders-section">
+      <div class="section-header">
+        <h2 class="section-title">📋 All Orders</h2>
+        <button class="btn btn-ghost" id="refresh-btn" onclick="loadOrders()">↻ Refresh</button>
+      </div>
+
+      <!-- Filter bar -->
+      <div class="filter-bar card">
+        <div class="filter-group">
+          <label for="filter-status">Status</label>
+          <select id="filter-status">
+            <option value="">All Statuses</option>
+            <option value="RECEIVED">RECEIVED</option>
+            <option value="PROCESSING">PROCESSING</option>
+            <option value="READY">READY</option>
+            <option value="DELIVERED">DELIVERED</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label for="filter-name">Customer Name</label>
+          <input type="text" id="filter-name" placeholder="Search name..." />
+        </div>
+        <div class="filter-group">
+          <label for="filter-phone">Phone</label>
+          <input type="text" id="filter-phone" placeholder="Search phone..." />
+        </div>
+        <button class="btn btn-primary" id="apply-filter-btn">Search</button>
+        <button class="btn btn-ghost" id="clear-filter-btn">Clear</button>
+      </div>
+
+      <!-- Orders table / cards area -->
+      <div id="orders-list">
+        <!-- Populated by loadOrders() in app.js -->
+        <p class="empty-state">Loading orders…</p>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- PAYMENT GATEWAY-->
+
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  <script>
+    function payNow(orderData) {
+      const options = {
+        key: "rzp_test_SiYd13etimROjN",
+        amount: orderData.order.totalBill * 100, // Amount in paise
+        currency: "INR",
+        name: "DCOMS",
+        description: "Payment for Order " + orderData.order.orderId,
+        order_id: orderData.razorpayOrderId,
+        prefill: {
+          name: orderData.order.customerName,
+          contact: orderData.order.phone
+        },
+        config: {
+          display: {
+            blocks: {
+              upi: {
+                name: "Pay via UPI",
+                instruments: [
+                  {
+                    method: "upi"
+                  }
+                ]
+              }
+            },
+            sequence: ["block.upi"],
+            preferences: {
+              show_default_blocks: true
+            }
+          }
+        },
+        handler: function (response) {
+          if (typeof finalizeOnlinePayment === 'function') {
+            finalizeOnlinePayment(orderData.order, response.razorpay_payment_id);
+          }
+        },
+        modal: {
+          ondismiss: function () {
+            document.getElementById("cash-btn").disabled = false;
+            document.getElementById("online-btn").disabled = false;
+          }
+        },
+        theme: {
+          color: "#2563eb"
+        }
+      };
+
+      const rzp = new Razorpay(options);
+      rzp.on('payment.failed', function (response) {
+        alert("Payment Failed! Reason: " + response.error.description);
+      });
+      rzp.open();
+    }
+  </script>
+
+  <!-- ══════════════════════════════════════════════════
+       STATUS UPDATE MODAL
+  ══════════════════════════════════════════════════ -->
+  <div class="modal-overlay" id="modal-overlay">
+    <div class="modal" id="status-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <h3 id="modal-title">Update Order Status</h3>
+      <p id="modal-order-info" class="modal-order-info"></p>
+
+      <div class="form-group">
+        <label for="modal-status-select">New Status</label>
+        <select id="modal-status-select"></select>
+      </div>
+
+      <div class="modal-message" id="modal-message"></div>
+
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="modal-cancel-btn">Cancel</button>
+        <button class="btn btn-primary" id="modal-confirm-btn">Update Status</button>
+      </div>
+    </div>
+  </div>
+
+  <footer class="app-footer">
+    <p>DCOMS &nbsp;·&nbsp; Created by ArPa&nbsp;·&nbsp; 2026</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+
+</html>
