@@ -1,51 +1,56 @@
 /**
  * ================================================================
- *  server.js — Render-safe entry point
+ *  server.js — Production + Render Ready
  * ================================================================
  */
 
 const express = require("express");
+const path = require("path");
 
-// --- Create app immediately (no external dependency yet)
 const app = express();
 
-// --- Basic middleware (safe defaults)
+// ------------------- Middleware -------------------
 app.use(express.json());
 
-// --- Health check (Render can hit this)
-app.get("/", (req, res) => {
-  res.status(200).send("Server is live");
-});
+// ------------------- Static Frontend -------------------
+// Adjust path carefully (case-sensitive on Render)
+const frontendPath = path.join(__dirname, "../Frontend");
 
-// --- Try loading your actual app routes (non-fatal if broken)
+// Serve static files (CSS, JS, images)
+app.use(express.static(frontendPath));
+
+// ------------------- API Routes -------------------
 try {
   const appRoutes = require("./app");
-  app.use("/", appRoutes);
-  console.log("✅ App routes loaded");
+  app.use("/api", appRoutes);
+  console.log("✅ API routes loaded");
 } catch (err) {
-  console.error("⚠️ Failed to load ./app");
-  console.error(err.message);
+  console.error("⚠️ Failed to load API routes:", err.message);
 }
 
-// --- Try connecting DB (non-blocking)
+// ------------------- Database Connection -------------------
 (async () => {
   try {
     const connectDB = require("../db/connect.js");
     await connectDB();
     console.log("📦 Database connected");
   } catch (err) {
-    console.error("⚠️ Database connection failed");
-    console.error(err.message);
+    console.error("⚠️ Database connection failed:", err.message);
   }
 })();
 
-// --- PORT (Render injects this automatically)
+// ------------------- Frontend Fallback -------------------
+// This ensures your website loads on any route
+app.get("*", (req, res) => {
+  res.sendFile(path.join(frontendPath, "index.html"));
+});
+
+// ------------------- Start Server -------------------
 const PORT = process.env.PORT || 10000;
 
-// --- ALWAYS start server (critical)
 app.listen(PORT, "0.0.0.0", () => {
   console.log("─────────────────────────────────────────");
   console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`🌐 Health check: http://localhost:${PORT}/`);
+  console.log(`🌐 App URL: http://localhost:${PORT}`);
   console.log("─────────────────────────────────────────");
 });
